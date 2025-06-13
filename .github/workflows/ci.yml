@@ -31,7 +31,8 @@ jobs:
       run: ctest --test-dir build -C Debug --output-on-failure
 
     - name: Notify Slack
-      if: always()  # 成功/失敗に関係なく通知
+      if: always()
+      shell: bash
       run: |
         STATUS="success"
         if [ ${{ job.status }} != 'success' ]; then
