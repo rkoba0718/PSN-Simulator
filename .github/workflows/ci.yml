@@ -2,42 +2,47 @@ name: Automation UnitTest
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
-    - cron: '0 15 * * *'  # 毎日0時 (JSTはUTC+9)
+    - cron: "0 15 * * *" # 毎日0時 (JSTはUTC+9)
 
 jobs:
   build-and-test:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install CMake
-      uses: jwlawson/actions-setup-cmake@v1
-      with:
-        cmake-version: '4.0.2'
+      - name: Check code format
+        run: |
+          clang-format --version
+          git ls-files '*.cpp' '*.h' | xargs clang-format -n --Werror
 
-    - name: Configure
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v1
+        with:
+          cmake-version: "4.0.2"
 
-    - name: Build
-      run: cmake --build build --config Debug
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
 
-    - name: Test
-      run: ctest --test-dir build -C Debug --output-on-failure
+      - name: Build
+        run: cmake --build build --config Debug
 
-    - name: Notify Slack
-      if: always()
-      shell: bash
-      run: |
-        STATUS="success"
-        if [ ${{ job.status }} != 'success' ]; then
-          STATUS="failure"
-        fi
-        curl -X POST -H 'Content-type: application/json' \
-        --data "{\"text\":\"GitHub Actions: *${STATUS}* in job *${{ github.job }}* (<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>)\"}" \
-        ${{ secrets.SLACK_WEBHOOK }}
+      - name: Test
+        run: ctest --test-dir build -C Debug --output-on-failure
+
+      - name: Notify Slack
+        if: always()
+        shell: bash
+        run: |
+          STATUS="success"
+          if [ ${{ job.status }} != 'success' ]; then
+            STATUS="failure"
+          fi
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"GitHub Actions: *${STATUS}* in job *${{ github.job }}* (<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>)\"}" \
+          ${{ secrets.SLACK_WEBHOOK }}
