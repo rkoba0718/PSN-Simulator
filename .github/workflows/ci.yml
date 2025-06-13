@@ -1,10 +1,12 @@
-name: CMake CI
+name: Automation UnitTest
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: '0 15 * * *'  # 毎日0時 (JSTはUTC+9)
 
 jobs:
   build-and-test:
@@ -27,3 +29,14 @@ jobs:
 
     - name: Test
       run: ctest --test-dir build -C Debug --output-on-failure
+
+    - name: Notify Slack
+      if: always()  # 成功/失敗に関係なく通知
+      run: |
+        STATUS="success"
+        if [ ${{ job.status }} != 'success' ]; then
+          STATUS="failure"
+        fi
+        curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"GitHub Actions: *${STATUS}* in job *${{ github.job }}* (<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>)\"}" \
+        ${{ secrets.SLACK_WEBHOOK }}
