@@ -1,0 +1,24 @@
+@startuml System Overview
+
+cloud "Server" as server {
+    ' game metadata as Json file
+    folder static as static {
+        [game_metadata.json]
+    }
+}
+
+package "PSN-Simulator" as psn {
+    ' psn_cli.exe
+    [CLI App] as app
+    ' use SQLite database
+    database "LocalCache" as db
+}
+
+actor User
+
+User -> app : execute PSN-Simulator
+app --> server : request store list, purchase processing, and so on
+server -> app : store list, game data
+app -> db : cache purchased game metadata
+
+@enduml
